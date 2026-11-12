@@ -1,0 +1,2 @@
+dir="$1"
+rm $(find-unused-tests-input "$dir" | tr '\n' ' ')

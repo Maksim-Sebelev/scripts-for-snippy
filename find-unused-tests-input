@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo "Использование: $0 <директория>"
+    exit 1
+fi
+
+ROOT_DIR="$1"
+if [[ ! -d "$ROOT_DIR" ]]; then
+    echo "Ошибка: '$ROOT_DIR' не является директорией"
+    exit 1
+fi
+
+# 1. Находим все поддиректории с именем "Inputs"
+find "$ROOT_DIR" -type d -name "Inputs" -print0 | \
+while IFS= read -r -d '' inputs_dir; do
+    # 2. Для каждого файла внутри них проверяем, встречается ли его имя где-либо ещё
+    find "$inputs_dir" -type f -print0 | \
+    while IFS= read -r -d '' file; do
+        filename=$(basename "$file")
+        
+        # -F: искать как фиксированную строку (без регулярных выражений)
+        # -r: рекурсивно по директории
+        # -l: выводить только имена файлов, где найдено совпадение
+        # -q: тихий режим (exit 0 при совпадении, exit 1 при отсутствии)
+        # --exclude-dir: не искать внутри других папок Inputs (чтобы не найти сам файл или соседние)
+        if ! grep -rlq -F -- "$filename" "$ROOT_DIR" 2>/dev/null; then # --exclude-dir="Inputs"
+            echo "$file"
+        fi
+    done
+done

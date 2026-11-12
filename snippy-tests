@@ -1,0 +1,1 @@
+python3 /root/llvm-project/build/Release/bin/llvm-lit /root/llvm-project/llvm/test/tools/llvm-snippy/

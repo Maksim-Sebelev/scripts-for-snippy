@@ -1,0 +1,66 @@
+#!/bin/bash
+
+llvm_dir=/root/llvm-project
+llvm_build_dir="$llvm_dir/build/Release"
+llvm_bin_dir="$llvm_build_dir/bin"
+llvm_tests_dir="$llvm_dir/llvm/test"
+llvm_tests_snippy_dir="$llvm_tests_dir/tools/llvm-snippy"
+
+echo "# ==================================================================== #"
+echo
+echo
+
+for test in $@; do
+    echo "# ========================= TEST ===================================== #"
+
+    if [ -e "$test" ]; then
+        rtest="$test" 
+    elif [ -f "$llvm_dir/$test" ]; then
+        rtest="$llvm_dir/$test"
+    elif [ -f "$llvm_tests_dir/$test" ]; then
+        rtest="$llvm_tests_dir/$test"
+    elif [ -f "$llvm_tests_snippy_dir/$test" ]; then
+        rtest="$llvm_tests_snippy_dir/$test"
+    else
+        was_found=0
+        while IFS= read -r -d '' dir; do
+           if [ -f "$dir/$test" ]; then
+               rtest="$dir/$test"
+               was_found=1
+               break
+           fi
+        done < <(find "$llvm_tests_snippy_dir" -type d -print0)
+
+       if [ $was_found -eq 0 ]; then
+           echo "# ==================================================================== #"
+           echo
+           echo
+           echo "No tests with name '$test' were found"
+           echo
+           echo
+           echo "# ================= TEST NOT FOUND =================================== #"
+           echo
+           echo
+           echo "# ==================================================================== #"
+           exit 1
+       fi
+    fi
+
+    echo "$rtest"
+    echo "# ==================================================================== #"
+    echo
+    echo
+
+    python3 "$llvm_bin_dir/llvm-lit" --verbose "$rtest"
+    if [ $? -ne 0 ]; then
+        echo
+        echo
+        echo "# ================ TEST FAILED ======================================= #"
+        exit 1
+    fi
+    echo
+    echo
+done
+
+
+echo "# ==================================================================== #"
